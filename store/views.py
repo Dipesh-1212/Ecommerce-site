@@ -1,12 +1,17 @@
+from email import message
+from pyexpat.errors import messages
+
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.db.models import Q
 from carts.models import CartItem
 from carts.views import _cart_id
 from category.models import Category
-from .models import Product
+from orders.models import OrderProduct
+from store.forms import ReviewForm
+from .models import Product, ProductGallery, ReviewRating, Variation
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-
+from django.contrib import messages
 # Create your views here.
 
 def store(request, category_slug = None):
@@ -38,20 +43,57 @@ def store(request, category_slug = None):
 
 
 
+
+
 def product_detail(request, category_slug, product_slug):
-    try:
-        single_product = Product.objects.get(category__slug = category_slug, slug = product_slug)
-        in_cart = CartItem.objects.filter(cart__cart_id = _cart_id(request), product = single_product).exists()
-       
-    except Exception as e:
-        raise e
+
+    # ✅ Get product (better filtering with category)
+    single_product = get_object_or_404(
+        Product,
+        category__slug=category_slug,
+        slug=product_slug
+    )
+
+    # ✅ Get variations
+    colors = Variation.objects.filter(
+        product=single_product,
+        variation_category='color',
+        is_active=True
+    )
+
+    sizes = Variation.objects.filter(
+        product=single_product,
+        variation_category='size',
+        is_active=True
+    )
+
+    # ✅ Get reviews
+    reviews = ReviewRating.objects.filter(
+        product_id=single_product.id,
+        status=True
+    )
+
+    # ✅ Check if user purchased product (IMPORTANT)
+    if request.user.is_authenticated:
+        orderproduct = OrderProduct.objects.filter(
+            user=request.user,
+            product_id=single_product.id,
+            ordered=True
+        ).exists()
+    else:
+        orderproduct = False
+
+    product_gallery = ProductGallery.objects.filter(product_id=single_product.id)
     context = {
-        'single_product':single_product,
-        'in_cart': in_cart,
+        'single_product': single_product,
+        'reviews': reviews,
+        'colors': colors,
+        'sizes': sizes,
+        'orderproduct': orderproduct,
+        'product_gallery': product_gallery, 
     }
-    return render(request,"store/product_detail.html",context)
 
-
+    return render(request, 'store/product_detail.html', context)
 
 def search(request):
     if 'keyword' in request.GET:
@@ -65,3 +107,41 @@ def search(request):
         'products_count':products_count,
     }
     return render(request,"store/store.html", context)
+
+
+
+def submit_review(request, product_id):
+    url = request.META.get('HTTP_REFERER')
+
+    if request.method == 'POST':
+        try:
+            # check if review already exists
+            reviews = ReviewRating.objects.get(
+                user__id=request.user.id,
+                product__id=product_id
+            )
+
+            form = ReviewForm(request.POST, instance=reviews)
+
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Your review has been updated.')
+
+            return redirect(url)
+
+        except ReviewRating.DoesNotExist:
+
+            form = ReviewForm(request.POST)
+
+            if form.is_valid():
+                data = form.save(commit=False)
+                data.product_id = product_id
+                data.user_id = request.user.id
+                data.ip = request.META.get('REMOTE_ADDR')
+                data.save()
+
+                messages.success(request, 'Your review has been submitted.')
+
+            return redirect(url)
+
+    return redirect(url)

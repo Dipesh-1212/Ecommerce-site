@@ -5,20 +5,26 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 
 
 class MyAccountManager(BaseUserManager):
-    def create_user(self,first_name,last_name,username,email,password = None):
+
+    def create_user(self, first_name, last_name, username, email, password=None):
+
         if not email:
             raise ValueError("User must have an email address")
+
         if not username:
-            raise ValueError("User must have an user name ")
+            raise ValueError("User must have a username")
+
         user = self.model(
-            email = self.normalize_email(email),
-            username = username,
-            first_name = first_name,
-            last_name = last_name,
+            email=self.normalize_email(email),
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
         )
-    
+
         user.set_password(password)
-        user.save(using = self._db)
+        user.is_active = True   # ✅ IMPORTANT FIX
+        user.save(using=self._db)
+
         return user
     
     def create_superuser(self,first_name,last_name,email,username,password):
@@ -61,6 +67,10 @@ class Account(AbstractBaseUser):
     
     objects = MyAccountManager()
     
+    
+    def full_name(self):
+        return f'{self.first_name} {self.last_name}'
+    
     def __str__(self):
         return self.email
     
@@ -69,3 +79,26 @@ class Account(AbstractBaseUser):
     
     def has_module_perms(self,add_label):
         return True
+    
+    
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(Account, on_delete=models.CASCADE)
+    address_line_1 = models.CharField(blank=True, max_length=100)
+    address_line_2 = models.CharField(blank=True, max_length=100)
+    profile_picture = models.ImageField(blank=True, upload_to='userprofile')
+    city = models.CharField(blank=True, max_length=20)
+    state = models.CharField(blank=True, max_length=20)
+    country = models.CharField(blank=True, max_length=20)
+    
+    def __str__(self):
+        return self.user.first_name
+    
+    def full_address(self):
+        return f'{self.address_line_1} {self.address_line_2}'
+    
+    
+    
+    
+# Users mmodel
+

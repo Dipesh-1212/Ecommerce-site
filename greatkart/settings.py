@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,10 +22,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-v1+h8wnpk2w1_7k7s&(txnsuj=q@v!in=4iw1jl-t5ulbcy5=s'
+SECRET_KEY = config('SECRET_KEY', default='your-default-secret-key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = []
 
@@ -41,6 +43,7 @@ INSTALLED_APPS = [
     'accounts',
     'store',
     'carts',
+    'orders',
 ]
 
 MIDDLEWARE = [
@@ -130,3 +133,48 @@ STATICFILES_DIRS =[
 # media files configurations
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR /'media'
+
+
+from django.contrib.messages import constants as message
+MESSAGE_TAGS = {
+    message.ERROR:'danger',
+
+}
+
+
+AUTH_USER_MODEL = 'accounts.Account'
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+
+
+# SMTP configuration (use environment variables in production; console backend for local dev)
+# To enable real SMTP, set SMTP_ENABLED=1 and provide EMAIL_HOST_USER and EMAIL_HOST_PASSWORD
+# SMTP configuration (use environment variables / .env via python-decouple)
+# To enable real SMTP set SMTP_ENABLED=True and provide EMAIL_HOST_USER and EMAIL_HOST_PASSWORD
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+
+# DEFAULT_FROM_EMAIL falls back to the host user or explicit DEFAULT_FROM_EMAIL env var
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
+
+# Choose backend: enable SMTP by default unless explicitly disabled via SMTP_ENABLED=False
+SMTP_ENABLED = config('SMTP_ENABLED', default=True, cast=bool)
+if SMTP_ENABLED:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+else:
+    if DEBUG:
+        EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+        EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'sent_emails')
+        # ensure the directory exists so Django can write files
+        try:
+            os.makedirs(EMAIL_FILE_PATH, exist_ok=True)
+        except Exception:
+            # fallback to console backend if file path cannot be created
+            EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    else:
+        EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

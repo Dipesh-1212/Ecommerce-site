@@ -1,0 +1,74 @@
+/* hide radio buttons */
+.rate input {
+    display: none;
+}
+
+/* container for stars */
+.rate {
+    display: inline-block;
+    direction: rtl; /* reverse stars for proper hover */
+    unicode-bidi: bidi-override; /* ensures proper order */
+}
+
+/* all labels styled as stars */
+.rate label {
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    font-size: 25px;
+    color: #ccc; /* default grey */
+    padding: 0 2px;
+    cursor: pointer;
+    position: relative;
+    display: inline-block;
+}
+
+/* full star */
+.rate label:before {
+    content: "\f005"; /* Font Awesome solid star */
+}
+
+/* half star */
+.rate label.half:before {
+    content: "\f089"; /* Font Awesome half star */
+    position: absolute;
+    left: 0;
+}
+
+/* hover effect */
+.rate label:hover,
+.rate label:hover ~ label {
+    color: orange;
+}
+
+/* checked stars */
+.rate input:checked ~ label,
+.rate input:checked ~ label ~ label {
+    color: orange;
+}
+
+/* smooth transition */
+.rate label,
+.rate input:checked ~ label {
+    transition: color 0.2s;
+}
+
+
+ul.thumb {
+    padding: 0;
+    margin:0 auto;    
+    float: left;
+}
+
+ul.thumb li {
+    list-style: none;
+    display: inline-block;
+    margin: 10px;
+}
+
+ul.thumb li img {
+    width: 80px;
+    height: 80px;
+    border: 1px solid #ddd;  
+    list-style: none;
+    padding: 5px;
+}   

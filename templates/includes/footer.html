@@ -21,3 +21,18 @@
 	</div><!-- //container -->
 </footer>
 <!-- ========================= FOOTER END // ========================= -->
+
+<script src="jquery-3.7.1.min.js"></script>
+
+<script>
+  $(document).ready(function() {
+	$('.thumb img').click(function() {
+	  var newSrc = $(this).attr('src');
+	  $('#mainImage').attr('src', newSrc);
+	});
+  });
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,14 @@
+{% autoescape off %}
+
+Hi {{ user.first_name }},
+
+Your order has been received and is being processed. Here are the details of your order:
+Order Number: {{ order.order_number }}
+Order Date: {{ order.created_at }}
+Shipping Address:
+{{ order.full_name }}
+{{ order.full_address }}
+{{ order.city }}, {{ order.state }} {{ order.zipcode }}
+{{ order.country }}
+
+{% endautoescape %}
